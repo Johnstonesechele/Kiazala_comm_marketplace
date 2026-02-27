@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Kiazala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <div class="brand">Kiazala Marketplace</div>
+      <a class="btn btn--ghost" href="/">Back to Landing</a>
+    </div>
+  </div>
+
+  <main class="container" style="margin-top:1rem;">
+    <section class="grid">
+      <article class="card" style="max-width:640px;">
+        <div class="cta-row" style="margin-bottom:0.7rem;">
+          <button id="tab-login" type="button" class="btn">Login</button>
+          <button id="tab-signup" type="button" class="btn btn--ghost">Sign Up</button>
+        </div>
+
+        <section id="login-view">
+          <h2>Login</h2>
+          <form id="login-form">
+            <div class="field"><label>Email</label><input id="login-email" type="email" required /></div>
+            <div class="field"><label>Password</label><input id="login-password" type="password" required /></div>
+            <button class="btn" type="submit">Sign in</button>
+          </form>
+          <p id="login-msg" class="status"></p>
+        </section>
+
+        <section id="signup-view" class="hidden">
+          <h2>Create Account</h2>
+          <form id="register-form" enctype="multipart/form-data">
+            <div class="field">
+              <label>Role</label>
+              <select id="reg-role" required>
+                <option value="buyer">Buyer</option>
+                <option value="seller">Seller</option>
+              </select>
+            </div>
+            <div class="field"><label>Name</label><input id="reg-name" required /></div>
+            <div class="field"><label>Email</label><input id="reg-email" type="email" required /></div>
+            <div class="field"><label>Password</label><input id="reg-password" type="password" minlength="6" required /></div>
+
+            <div id="seller-fields" class="hidden">
+              <div class="field"><label>Business Name</label><input id="reg-business" /></div>
+              <div class="field"><label>Location</label><input id="reg-location" /></div>
+              <div class="field"><label>Short Bio</label><textarea id="reg-bio" rows="2"></textarea></div>
+              <div class="field"><label>Verification Document</label><input id="reg-doc" type="file" accept="image/*,.pdf" /></div>
+            </div>
+
+            <button class="btn" type="submit">Create Account</button>
+          </form>
+          <p id="register-msg" class="status"></p>
+        </section>
+        <div style="margin-top:1rem;padding:0.8rem;background:var(--surface);border-radius:8px;font-size:0.85em;">
+          <strong>Test Accounts:</strong>
+          <ul style="margin:0.5rem 0 0 1.2rem;">
+            <li><strong>Admin:</strong> admin@kiazala.local / Admin@1234</li>
+            <li><strong>Buyer:</strong> buyer@test.com / Buyer@1234</li>
+            <li><strong>Seller:</strong> seller@test.com / Seller@1234</li>
+          </ul>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <button id="chat-fab" class="chat-fab" aria-label="Open assistant">AI</button>
+  <section id="chat-panel" class="chat-panel hidden">
+    <h3>Marketplace Assistant</h3>
+    <div id="chat-history" class="chat-history"></div>
+    <input id="chat-input" placeholder="Ask for login/registration help" />
+    <select id="chat-language">
+      <option value="en">English</option>
+      <option value="sw">Swahili</option>
+    </select>
+    <div class="cta-row" style="margin-top:0.5rem;">
+      <button id="chat-ask" class="btn btn--alt">Send</button>
+    </div>
+  </section>
+
+  <script src="/common.js"></script>
+  <script src="/auth.js"></script>
+</body>
+</html>

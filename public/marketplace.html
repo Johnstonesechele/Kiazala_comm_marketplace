@@ -1,0 +1,230 @@
+  <!-- Chat Modal for threaded conversations -->
+  <section id="chat-modal" class="modal hidden">
+    <div class="modal__panel" style="max-width:480px;min-width:320px;">
+      <h2>Messages</h2>
+      <div id="chat-list" style="max-height:180px;overflow-y:auto;margin-bottom:1rem;"></div>
+      <div id="chat-thread" style="display:none;flex-direction:column;gap:0.5rem;max-height:320px;overflow-y:auto;margin-bottom:1rem;"></div>
+      <form id="chat-send-form" style="display:none;flex-direction:row;gap:0.5rem;">
+        <input id="chat-send-input" type="text" placeholder="Type a message..." style="flex:1;" autocomplete="off" />
+        <button class="btn" type="submit">Send</button>
+      </form>
+      <button id="chat-modal-close" class="btn btn--ghost" style="margin-top:0.5rem;">Close</button>
+    </div>
+  </section>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace | Kiazala</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="container topbar__inner">
+      <div class="brand">Kiazala Marketplace</div>
+      <div class="cta-row" style="align-items:center;">
+        <span id="topbar-user" class="status" style="margin-right:0.4rem;"></span>
+        <button id="settings-open" class="btn btn--ghost">⚙ Settings</button>
+        <button id="logout-btn" class="btn btn--alt">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container market-layout">
+    <section class="card">
+      <h2>Product Listings</h2>
+      <div class="filters">
+        <input id="search" placeholder="Search products or sellers" />
+        <select id="filter-category">
+          <option value="">All Categories</option>
+          <option>Cereals</option>
+          <option>Vegetables</option>
+          <option>Fruits</option>
+          <option>Legumes</option>
+          <option>Dairy</option>
+          <option>Livestock</option>
+          <option>Spices</option>
+        </select>
+        <input id="max-price" type="number" min="0" placeholder="Max price (KES)" />
+        <select id="sort-order">
+          <option value="newest">Newest first</option>
+          <option value="price-asc">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
+          <option value="rating">Highest rated</option>
+        </select>
+        <select id="filter-store-rating">
+          <option value="">All Store Ratings</option>
+          <option value="5">5 stars</option>
+          <option value="4">4 stars & up</option>
+          <option value="3">3 stars & up</option>
+          <option value="2">2 stars & up</option>
+          <option value="1">1 star & up</option>
+        </select>
+      </div>
+      <div id="listings" class="product-grid"></div>
+
+      <h3 style="margin-top:1rem;">Public Seller Ratings</h3>
+      <div id="public-reviews" class="list"></div>
+    </section>
+
+    <aside class="card">
+      <h2 id="dashboard-title">Dashboard</h2>
+      <p id="whoami" class="status"></p>
+
+      <section id="buyer-panel" class="hidden">
+        <h3>Cart</h3>
+        <ul id="cart" class="list"></ul>
+        <div class="field"><label>Delivery Location</label><input id="order-location" placeholder="Enter delivery address/location" required /></div>
+        <button id="place-order-btn" class="btn">Place Order</button>
+        <p id="order-msg" class="status"></p>
+
+        <h3>My Orders</h3>
+        <ul id="orders" class="list"></ul>
+
+        <h3>Product Review</h3>
+        <form id="review-form">
+          <div class="field"><label>Order</label><select id="review-order" required></select></div>
+          <div class="field"><label>Product</label><select id="review-product" required></select></div>
+          <div class="field"><label>Review</label><textarea id="review-comment" rows="2" required></textarea></div>
+          <button class="btn" type="submit">Publish Review</button>
+        </form>
+        <p id="review-msg" class="status"></p>
+        <h3>Rate Store</h3>
+        <form id="rating-form">
+          <div class="field"><label>Order</label><select id="rating-order" required></select></div>
+          <div class="field"><label>Store</label><select id="rating-seller" required></select></div>
+          <div class="field"><label>Rating (1-5)</label><input id="rating-score" type="number" min="1" max="5" required /></div>
+          <button class="btn" type="submit">Submit Rating</button>
+        </form>
+        <p id="rating-msg" class="status"></p>
+
+        <h3>Feedback</h3>
+        <form id="feedback-form">
+          <div class="field"><textarea id="feedback-msg-input" rows="2" placeholder="Share platform feedback"></textarea></div>
+          <button class="btn btn--ghost" type="submit">Send Feedback</button>
+        </form>
+        <p id="feedback-msg" class="status"></p>
+
+        <h3>Messages</h3>
+        <ul id="messages-inbox" class="list"></ul>
+      </section>
+
+      <section id="seller-panel" class="hidden">
+        <p id="seller-approval" class="status"></p>
+        <h3>Create Listing</h3>
+        <form id="listing-form" enctype="multipart/form-data">
+          <div class="field"><label>Name</label><input id="lst-name" required /></div>
+          <div class="field"><label>Description</label><textarea id="lst-description" rows="2" required></textarea></div>
+          <div class="field">
+            <label>Category</label>
+            <select id="lst-category" required>
+              <option value="">Select category</option>
+              <option>Cereals</option>
+              <option>Vegetables</option>
+              <option>Fruits</option>
+              <option>Legumes</option>
+              <option>Dairy</option>
+              <option>Livestock</option>
+              <option>Spices</option>
+            </select>
+          </div>
+          <div class="field"><label>Quantity Unit</label><input id="lst-qty" placeholder="Per Kilogram" required /></div>
+          <div class="field"><label>Price (KES)</label><input id="lst-price" type="number" min="0" step="0.01" required /></div>
+          <div class="field"><label>Stock Available (optional)</label><input id="lst-stock" type="number" min="0" placeholder="Leave blank if unlimited" /></div>
+          <div class="field"><label>Product Image</label><input id="lst-image" type="file" accept="image/*" /></div>
+          <button class="btn" type="submit">Publish</button>
+        </form>
+        <p id="listing-msg" class="status"></p>
+        <h3>My Listings</h3>
+        <ul id="seller-listings" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">Orders Received</h3>
+        <ul id="seller-orders" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">Messages from Buyers</h3>
+        <ul id="seller-messages-inbox" class="list"></ul>
+      </section>
+
+      <section id="admin-panel" class="hidden">
+        <h3>Pending Sellers</h3>
+        <ul id="pending-sellers" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">System Overview</h3>
+        <ul id="admin-stats" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">Recent Reviews</h3>
+        <ul id="admin-reviews" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">User Feedback</h3>
+        <ul id="admin-feedback" class="list"></ul>
+        <h3 style="margin-top:0.8rem;">All Users</h3>
+        <div class="field" style="margin-bottom:0.4rem;"><input id="admin-user-search" placeholder="Search users by name or email" /></div>
+        <ul id="admin-users" class="list"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <section id="settings-modal" class="modal hidden">
+    <div class="modal__panel">
+      <h2>Settings</h2>
+      <form id="settings-form">
+        <div class="field"><label>Name</label><input id="set-name" required /></div>
+        <div class="field"><label>Business Name (Seller)</label><input id="set-business" /></div>
+        <div class="field"><label>Location</label><input id="set-location" /></div>
+        <div class="field"><label>Bio</label><textarea id="set-bio" rows="2"></textarea></div>
+        <div class="field"><label>Language</label><select id="set-language"><option value="en">English</option><option value="sw">Swahili</option></select></div>
+        <div class="cta-row">
+          <button class="btn" type="submit">Save</button>
+          <button class="btn btn--ghost" type="button" id="settings-close">Close</button>
+        </div>
+      </form>
+      <p id="settings-msg" class="status"></p>
+    </div>
+  </section>
+
+  <section id="card-ai-modal" class="modal hidden">
+    <div class="modal__panel">
+      <h2>AI Purchase Advisor</h2>
+      <div class="cta-row" style="margin-bottom:0.6rem;">
+        <button id="card-ai-lang-en" class="btn btn--ghost" type="button">English</button>
+        <button id="card-ai-lang-sw" class="btn btn--ghost" type="button">Swahili</button>
+      </div>
+      <div class="field">
+        <label for="card-ai-question">Ask Anything About This Product/Store</label>
+        <textarea id="card-ai-question" rows="2" placeholder="e.g. Is this photo quality good? Is this seller trustworthy? Should I continue with this purchase?"></textarea>
+      </div>
+      <div class="field">
+        <label for="card-ai-language">Response Language</label>
+        <select id="card-ai-language">
+          <option value="en">English</option>
+          <option value="sw">Swahili</option>
+        </select>
+      </div>
+      <button id="card-ai-run" class="btn btn--alt">Analyze With AI</button>
+      <div id="card-ai-text" style="line-height:1.6;"></div>
+      <h3>Alternative Products</h3>
+      <ul id="card-ai-recs" class="list"></ul>
+      <button id="card-ai-close" class="btn btn--ghost">Close</button>
+    </div>
+  </section>
+
+  <button id="chat-fab" class="chat-fab" aria-label="Open assistant">AI</button>
+  <button id="open-chat-modal-btn" class="chat-fab" style="right:90px;background:#4a90e2;" data-open-chat-modal aria-label="Open chat">
+    <span style="font-size:1.3em;">💬</span>
+  </button>
+  <section id="chat-panel" class="chat-panel hidden">
+    <h3>Marketplace Assistant</h3>
+    <div id="chat-history" class="chat-history"></div>
+    <input id="chat-input" placeholder="Ask about this page or what to do next" />
+    <select id="chat-language">
+      <option value="en">English</option>
+      <option value="sw">Swahili</option>
+    </select>
+    <div class="cta-row" style="margin-top:0.5rem;">
+      <button id="chat-ask" class="btn btn--alt">Send</button>
+    </div>
+  </section>
+
+  <script src="/common.js"></script>
+  <script src="/marketplace.js"></script>
+</body>
+</html>

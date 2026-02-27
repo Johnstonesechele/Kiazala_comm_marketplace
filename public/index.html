@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiazala Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <p>Community Marketplace</p>
+      <h1>Fresh local products. Transparent delivery. Verified reviews.</h1>
+      <p>Buyers, sellers, and communities connect in one trusted platform.</p>
+      <div class="cta-row">
+        <a class="btn" href="/auth">Login / Register</a>
+        <a class="btn btn--alt" href="/marketplace">Go to Products</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container info-cards">
+    <section class="grid">
+      <article class="card info-card">
+        <h2>How it works</h2>
+        <p>Create a buyer or seller account. Sellers upload verification documents and wait for approval before publishing products.</p>
+      </article>
+      <article class="card info-card">
+        <h2>Trusted reviews</h2>
+        <p>Reviews are only posted by buyers who confirm product arrival, so ratings are tied to real transactions.</p>
+      </article>
+      <article class="card info-card">
+        <h2>AI support</h2>
+        <p>Use the floating AI assistant for guidance, page help, and smart recommendations while browsing products.</p>
+      </article>
+    </section>
+  </main>
+
+  <button id="chat-fab" class="chat-fab" aria-label="Open assistant">AI</button>
+  <section id="chat-panel" class="chat-panel hidden">
+    <h3>Marketplace Assistant</h3>
+    <div id="chat-history" class="chat-history"></div>
+    <input id="chat-input" placeholder="Ask how to use this page" />
+    <select id="chat-language">
+      <option value="en">English</option>
+      <option value="sw">Swahili</option>
+    </select>
+    <div class="cta-row" style="margin-top:0.5rem;">
+      <button id="chat-ask" class="btn btn--alt">Send</button>
+    </div>
+  </section>
+
+  <script src="/common.js"></script>
+  <script>
+    Kiazala.initFloatingChat();
+  </script>
+</body>
+</html>

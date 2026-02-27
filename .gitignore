@@ -1,0 +1,2 @@
+# Prevent node_modules and its contents from being committed
+node_modules/
