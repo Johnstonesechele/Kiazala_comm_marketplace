@@ -1,2 +1,4 @@
 # Prevent node_modules and its contents from being committed
+# Ignore environment files
+.env
 node_modules/
