@@ -21,7 +21,7 @@ AI (Gemini) is integrated for:
 
 We built the project with:
 
-- Node.js + Express backend API
+- Express backend API
 - SQLite persistent storage for users, listings, orders, reviews, feedback, messages, and uploaded files
 - Vanilla HTML/CSS/JS frontend with separate dashboards by role
 - Gemini API integration through backend endpoints using `.env` configuration
