@@ -145,6 +145,25 @@
         <ul id="seller-orders" class="list"></ul>
         <h3 style="margin-top:0.8rem;">Messages from Buyers</h3>
         <ul id="seller-messages-inbox" class="list"></ul>
+
+        <h3 style="margin-top:0.8rem;">Analytics and Insights</h3>
+        <ul id="seller-analytics-stats" class="list"></ul>
+        <h4 style="margin-top:0.6rem;">Popular Products</h4>
+        <ul id="seller-popular-products" class="list"></ul>
+        <h4 style="margin-top:0.6rem;">Peak Sale Times</h4>
+        <ul id="seller-peak-times" class="list"></ul>
+        <h4 style="margin-top:0.6rem;">Market Trends</h4>
+        <ul id="seller-demand-trends" class="list"></ul>
+        <div class="field" style="margin-top:0.6rem;">
+          <label for="seller-insight-language">AI Insight Language</label>
+          <select id="seller-insight-language">
+            <option value="en">English</option>
+            <option value="sw">Swahili</option>
+          </select>
+        </div>
+        <button id="seller-insight-btn" class="btn btn--alt" type="button">Generate AI Sales Insights</button>
+        <p id="seller-insight-msg" class="status"></p>
+        <div id="seller-ai-insights" class="status" style="line-height:1.6;"></div>
       </section>
 
       <section id="admin-panel" class="hidden">

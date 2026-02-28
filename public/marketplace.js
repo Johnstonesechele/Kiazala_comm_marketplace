@@ -163,6 +163,15 @@ const ui = {
   listingMsg: getSafeElement("listing-msg"),
   sellerListings: getSafeElement("seller-listings"),
   sellerOrders: getSafeElement("seller-orders"),
+  sellerMessagesInbox: getSafeElement("seller-messages-inbox"),
+  sellerAnalyticsStats: getSafeElement("seller-analytics-stats"),
+  sellerPopularProducts: getSafeElement("seller-popular-products"),
+  sellerPeakTimes: getSafeElement("seller-peak-times"),
+  sellerDemandTrends: getSafeElement("seller-demand-trends"),
+  sellerInsightLanguage: getSafeElement("seller-insight-language"),
+  sellerInsightBtn: getSafeElement("seller-insight-btn"),
+  sellerInsightMsg: getSafeElement("seller-insight-msg"),
+  sellerAiInsights: getSafeElement("seller-ai-insights"),
   pendingSellers: getSafeElement("pending-sellers"),
   adminStats: getSafeElement("admin-stats"),
   adminReviews: getSafeElement("admin-reviews"),
@@ -545,9 +554,9 @@ async function loadBuyerData() {
 async function loadSellerData() {
     // Load seller messages inbox
     const inboxRes = await api("/api/messages/inbox");
-    if (ui['seller-messages-inbox']) {
+    if (ui.sellerMessagesInbox) {
       const msgs = inboxRes.messages || [];
-      ui['seller-messages-inbox'].innerHTML = msgs.length
+      ui.sellerMessagesInbox.innerHTML = msgs.length
         ? msgs.map(function(m) {
             return `<li style="${!m.is_read ? 'font-weight:700;' : ''}">
               <div><strong>${m.sender_name}</strong>${m.listing_name ? ' re: ' + m.listing_name : ''}
@@ -598,6 +607,73 @@ async function loadSellerData() {
           + "</li>";
       }).join("")
     : "<li style=\"color:var(--muted);\"><em>No listings yet. Create your first listing above.</em></li>";
+
+  await loadSellerAnalytics();
+}
+
+async function loadSellerAnalytics() {
+  if (!state.me || state.me.role !== "seller") return;
+
+  const res = await api("/api/seller/analytics");
+
+  if (ui.sellerAnalyticsStats) {
+    ui.sellerAnalyticsStats.innerHTML = [
+      "Window: last " + (res.windowDays || 30) + " days",
+      "Orders: " + ((res.summary && res.summary.totalOrders) || 0),
+      "Units sold: " + ((res.summary && res.summary.totalUnits) || 0),
+      "Gross sales: " + fmt((res.summary && res.summary.grossSales) || 0)
+    ].map(function(line) { return "<li>" + line + "</li>"; }).join("");
+  }
+
+  if (ui.sellerPopularProducts) {
+    ui.sellerPopularProducts.innerHTML = (res.popularProducts || []).length
+      ? res.popularProducts.map(function(p) {
+          return "<li><strong>" + p.listingName + "</strong> — " + p.unitsSold + " units, " + fmt(p.revenue) + "</li>";
+        }).join("")
+      : "<li style=\"color:var(--muted);\"><em>No product demand data yet.</em></li>";
+  }
+
+  if (ui.sellerPeakTimes) {
+    ui.sellerPeakTimes.innerHTML = (res.peakTimes || []).length
+      ? res.peakTimes.map(function(t) { return "<li>" + t.hour + ":00 — " + t.orderCount + " orders</li>"; }).join("")
+      : "<li style=\"color:var(--muted);\"><em>No peak-time pattern yet.</em></li>";
+  }
+
+  if (ui.sellerDemandTrends) {
+    ui.sellerDemandTrends.innerHTML = (res.demandTrends || []).length
+      ? res.demandTrends.map(function(t) {
+          const sign = t.deltaQty > 0 ? "+" : "";
+          const trend = t.deltaQty > 0 ? "up" : t.deltaQty < 0 ? "down" : "flat";
+          return "<li><strong>" + t.category + "</strong> — " + trend + " (" + sign + t.deltaQty + " units, " + sign + t.deltaPct + "%)</li>";
+        }).join("")
+      : "<li style=\"color:var(--muted);\"><em>No market trend data yet.</em></li>";
+  }
+}
+
+async function generateSellerAiInsights() {
+  if (!state.me || state.me.role !== "seller") return;
+  const language = ui.sellerInsightLanguage ? ui.sellerInsightLanguage.value : "en";
+  setStatus(ui.sellerInsightMsg, "Generating AI insights...");
+  const result = await api("/api/ai/seller-insights", {
+    method: "POST",
+    body: JSON.stringify({ language })
+  });
+
+  const lines = String(result.insights || "")
+    .replace(/\*\*/g, "")
+    .split("\n")
+    .map(function(x) { return x.trim(); })
+    .filter(Boolean)
+    .map(function(line) { return line.replace(/^[\-\*\u2022]\s*/, "").replace(/^\d+[\).\s-]*/, "").trim(); })
+    .filter(Boolean)
+    .slice(0, 8);
+
+  if (ui.sellerAiInsights) {
+    ui.sellerAiInsights.innerHTML = lines.length
+      ? "<ul style=\"margin:0.3rem 0 0 1rem;\">" + lines.map(function(x) { return "<li>" + x + "</li>"; }).join("") + "</ul>"
+      : "<p>No AI insights returned.</p>";
+  }
+  setStatus(ui.sellerInsightMsg, "AI insights ready.");
 }
 
 async function loadSellerOrders() {
