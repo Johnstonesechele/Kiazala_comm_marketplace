@@ -7,6 +7,7 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const db = require("./lib/sqlite");
 const PDFDocument = require("pdfkit");
 const { createToken, requireAuth } = require("./lib/auth");
@@ -367,6 +368,65 @@ app.post("/api/auth/login", async (req, res) => {
   const mapped = mapUser(user);
   const token = createToken(mapped);
   return res.json({ token, user: mapped });
+});
+
+app.post("/api/auth/request-password-reset", (req, res) => {
+  const email = String(req.body.email || "").toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: "email is required" });
+
+  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+  if (user) {
+    const rawToken = crypto.randomBytes(24).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    db.prepare(
+      `UPDATE users
+       SET password_reset_token_hash = ?, password_reset_expires_at = ?, updated_at = ?
+       WHERE id = ?`
+    ).run(tokenHash, expiresAt, nowIso(), user.id);
+
+    const payload = { message: "If this email exists, a reset token has been generated." };
+    if (process.env.NODE_ENV !== "production") {
+      payload.resetToken = rawToken;
+      payload.note = "Development mode token. Use it in the reset form.";
+    }
+    return res.json(payload);
+  }
+
+  return res.json({ message: "If this email exists, a reset token has been generated." });
+});
+
+app.post("/api/auth/reset-password", async (req, res) => {
+  const token = String(req.body.token || "").trim();
+  const newPassword = String(req.body.newPassword || "");
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "token and newPassword are required" });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: "newPassword must be at least 6 characters" });
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const user = db
+    .prepare(
+      `SELECT * FROM users
+       WHERE password_reset_token_hash = ?
+         AND password_reset_expires_at IS NOT NULL
+         AND password_reset_expires_at > ?`
+    )
+    .get(tokenHash, nowIso());
+
+  if (!user) return res.status(400).json({ error: "Invalid or expired reset token" });
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  db.prepare(
+    `UPDATE users
+     SET password_hash = ?, password_reset_token_hash = NULL, password_reset_expires_at = NULL, updated_at = ?
+     WHERE id = ?`
+  ).run(passwordHash, nowIso(), user.id);
+
+  return res.json({ message: "Password reset successful. You can now login." });
 });
 
 function getAuthUser(req) {
