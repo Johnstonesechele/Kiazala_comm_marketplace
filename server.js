@@ -709,6 +709,129 @@ app.get("/api/orders/seller", requireAuth, requireRole("seller"), (req, res) => 
   return res.json({ orders: data });
 });
 
+app.get("/api/seller/analytics", requireAuth, requireRole("seller"), (req, res) => {
+  const sellerId = req.auth.sub;
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const last7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const prev14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const summary = db.prepare(
+    `SELECT
+      COUNT(DISTINCT o.id) AS total_orders,
+      COALESCE(SUM(oi.qty), 0) AS total_units,
+      COALESCE(SUM(oi.qty * oi.price_at_purchase), 0) AS gross_sales
+     FROM orders o
+     JOIN order_items oi ON oi.order_id = o.id
+     WHERE oi.seller_id = ? AND o.created_at >= ?`
+  ).get(sellerId, since);
+
+  const popularProducts = db.prepare(
+    `SELECT oi.listing_id, oi.listing_name,
+            COALESCE(SUM(oi.qty), 0) AS units_sold,
+            COALESCE(SUM(oi.qty * oi.price_at_purchase), 0) AS revenue
+     FROM orders o
+     JOIN order_items oi ON oi.order_id = o.id
+     WHERE oi.seller_id = ? AND o.created_at >= ?
+     GROUP BY oi.listing_id, oi.listing_name
+     ORDER BY units_sold DESC, revenue DESC
+     LIMIT 5`
+  ).all(sellerId, since);
+
+  const peakTimes = db.prepare(
+    `SELECT strftime('%H', o.created_at) AS hour, COUNT(*) AS order_count
+     FROM orders o
+     JOIN order_items oi ON oi.order_id = o.id
+     WHERE oi.seller_id = ? AND o.created_at >= ?
+     GROUP BY hour
+     ORDER BY order_count DESC
+     LIMIT 5`
+  ).all(sellerId, since);
+
+  const trendRows = db.prepare(
+    `SELECT
+      l.category,
+      SUM(CASE WHEN o.created_at >= ? THEN oi.qty ELSE 0 END) AS qty_last_7d,
+      SUM(CASE WHEN o.created_at >= ? AND o.created_at < ? THEN oi.qty ELSE 0 END) AS qty_prev_7d
+     FROM orders o
+     JOIN order_items oi ON oi.order_id = o.id
+     JOIN listings l ON l.id = oi.listing_id
+     WHERE oi.seller_id = ? AND o.created_at >= ?
+     GROUP BY l.category`
+  ).all(last7, prev14, last7, sellerId, prev14);
+
+  const demandTrends = trendRows.map((r) => {
+    const prev = Number(r.qty_prev_7d || 0);
+    const curr = Number(r.qty_last_7d || 0);
+    const delta = curr - prev;
+    const pct = prev > 0 ? Number(((delta / prev) * 100).toFixed(1)) : (curr > 0 ? 100 : 0);
+    return { category: r.category, qtyLast7d: curr, qtyPrev7d: prev, deltaQty: delta, deltaPct: pct };
+  });
+
+  return res.json({
+    windowDays: 30,
+    summary: {
+      totalOrders: Number(summary.total_orders || 0),
+      totalUnits: Number(summary.total_units || 0),
+      grossSales: Number(summary.gross_sales || 0)
+    },
+    popularProducts: popularProducts.map((p) => ({
+      listingId: p.listing_id,
+      listingName: p.listing_name,
+      unitsSold: Number(p.units_sold || 0),
+      revenue: Number(p.revenue || 0)
+    })),
+    peakTimes: peakTimes.map((p) => ({
+      hour: p.hour,
+      orderCount: Number(p.order_count || 0)
+    })),
+    demandTrends
+  });
+});
+
+app.post("/api/ai/seller-insights", requireAuth, requireRole("seller"), async (req, res) => {
+  try {
+    const sellerId = req.auth.sub;
+    const language = String(req.body.language || "en").toLowerCase() === "sw" ? "sw" : "en";
+    const languageName = language === "sw" ? "Swahili" : "English";
+    const seller = db.prepare("SELECT * FROM users WHERE id = ?").get(sellerId);
+    if (!seller) return res.status(404).json({ error: "Seller not found" });
+
+    const metrics = db.prepare(
+      `SELECT COUNT(DISTINCT o.id) AS orders_count,
+              COALESCE(SUM(oi.qty),0) AS units_sold,
+              COALESCE(SUM(oi.qty*oi.price_at_purchase),0) AS sales
+       FROM orders o
+       JOIN order_items oi ON oi.order_id = o.id
+       WHERE oi.seller_id = ? AND o.created_at >= ?`
+    ).get(sellerId, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    const top = db.prepare(
+      `SELECT oi.listing_name, SUM(oi.qty) AS qty
+       FROM orders o JOIN order_items oi ON oi.order_id = o.id
+       WHERE oi.seller_id = ? AND o.created_at >= ?
+       GROUP BY oi.listing_name
+       ORDER BY qty DESC LIMIT 5`
+    ).all(sellerId, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    const text = await promptGemini({
+      systemInstruction: `You are a concise seller growth analyst. Reply only in ${languageName}.`,
+      prompt:
+        `Seller: ${seller.business_name || seller.name}\n` +
+        `Orders 30d: ${Number(metrics.orders_count || 0)}, Units: ${Number(metrics.units_sold || 0)}, Sales: ${Number(metrics.sales || 0)}\n` +
+        `Top products: ${top.map((t) => `${t.listing_name} (${Number(t.qty || 0)})`).join("; ") || "none"}\n` +
+        `Return up to 6 bullet points: buyer behavior insights, demand trend, 3 concrete actions, and one risk.`,
+      fallback: "Unable to generate AI sales insights right now."
+    });
+
+    return res.json({ insights: text });
+  } catch (err) {
+    return res.status(503).json({
+      error: "Seller AI insights unavailable. Ensure GEMINI_API_KEY is configured.",
+      details: err.message
+    });
+  }
+});
+
 app.post("/api/orders/:id/confirm-arrival", requireAuth, requireRole("buyer"), (req, res) => {
   const orderId = Number(req.params.id);
   const order = db.prepare("SELECT * FROM orders WHERE id = ? AND buyer_id = ?").get(orderId, req.auth.sub);

@@ -32,7 +32,25 @@
             <div class="field"><label>Password</label><input id="login-password" type="password" required /></div>
             <button class="btn" type="submit">Sign in</button>
           </form>
+          <button id="open-forgot" type="button" class="btn btn--ghost" style="margin-top:0.5rem;">Forgot password?</button>
           <p id="login-msg" class="status"></p>
+        </section>
+
+        <section id="forgot-view" class="hidden">
+          <h2>Reset Password</h2>
+          <form id="forgot-form">
+            <div class="field"><label>Account Email</label><input id="forgot-email" type="email" required /></div>
+            <button class="btn" type="submit">Generate Reset Token</button>
+          </form>
+          <p id="forgot-msg" class="status"></p>
+
+          <form id="reset-form">
+            <div class="field"><label>Reset Token</label><input id="reset-token" required /></div>
+            <div class="field"><label>New Password</label><input id="reset-password" type="password" minlength="6" required /></div>
+            <button class="btn btn--alt" type="submit">Set New Password</button>
+          </form>
+          <p id="reset-msg" class="status"></p>
+          <button id="back-login" type="button" class="btn btn--ghost">Back to Login</button>
         </section>
 
         <section id="signup-view" class="hidden">

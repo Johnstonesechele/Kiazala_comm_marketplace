@@ -1,6 +1,6 @@
-// Only destructure if not already declared
-if (typeof api === "undefined") {
-  const { api, setToken, setStatus, initFloatingChat } = window.Kiazala;
+const { api, setToken, setStatus, initFloatingChat } = window.Kiazala || {};
+if (!api || !setToken || !setStatus || !initFloatingChat) {
+  throw new Error("Kiazala helpers not loaded. Load /common.js before /auth.js.");
 }
 
 const registerForm = document.getElementById("register-form");
@@ -13,20 +13,37 @@ const tabLogin = document.getElementById("tab-login");
 const tabSignup = document.getElementById("tab-signup");
 const loginView = document.getElementById("login-view");
 const signupView = document.getElementById("signup-view");
+const forgotView = document.getElementById("forgot-view");
+const openForgot = document.getElementById("open-forgot");
+const backLogin = document.getElementById("back-login");
+const forgotForm = document.getElementById("forgot-form");
+const resetForm = document.getElementById("reset-form");
+const forgotMsg = document.getElementById("forgot-msg");
+const resetMsg = document.getElementById("reset-msg");
 
 function showTab(tab) {
   const onLogin = tab === "login";
   if (onLogin) {
     loginView.classList.remove("hidden");
     signupView.classList.add("hidden");
+    forgotView.classList.add("hidden");
     tabLogin.classList.remove("btn--ghost");
     tabSignup.classList.add("btn--ghost");
   } else {
     loginView.classList.add("hidden");
     signupView.classList.remove("hidden");
+    forgotView.classList.add("hidden");
     tabLogin.classList.add("btn--ghost");
     tabSignup.classList.remove("btn--ghost");
   }
+}
+
+function showForgot() {
+  loginView.classList.add("hidden");
+  signupView.classList.add("hidden");
+  forgotView.classList.remove("hidden");
+  tabLogin.classList.add("btn--ghost");
+  tabSignup.classList.add("btn--ghost");
 }
 
 tabLogin.addEventListener("click", (e) => {
@@ -39,6 +56,9 @@ tabSignup.addEventListener("click", (e) => {
   showTab("signup");
 });
 
+openForgot.addEventListener("click", () => showForgot());
+backLogin.addEventListener("click", () => showTab("login"));
+
 regRole.addEventListener("change", () => {
   sellerFields.classList.toggle("hidden", regRole.value !== "seller");
 });
@@ -46,7 +66,7 @@ regRole.addEventListener("change", () => {
 registerForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus(registerMsg, "Creating account...");
-  
+
   const fd = new FormData();
   fd.append("role", regRole.value);
   fd.append("name", document.getElementById("reg-name").value);
@@ -60,32 +80,30 @@ registerForm.addEventListener("submit", async (event) => {
   if (doc) fd.append("verificationDocument", doc);
 
   const registeredEmail = document.getElementById("reg-email").value;
-  
+
   try {
     const result = await api("/api/auth/register", {
       method: "POST",
       body: fd
     });
-    setStatus(registerMsg, "✓ " + (result.message || "Account created! You can now log in."));
+    setStatus(registerMsg, "[OK] " + (result.message || "Account created! You can now log in."));
     registerForm.reset();
     sellerFields.classList.add("hidden");
-    // Auto-switch to login tab after successful registration
     setTimeout(() => {
       showTab("login");
       document.getElementById("login-email").value = registeredEmail;
       setStatus(registerMsg, "");
       setStatus(loginMsg, "Please login with your new account");
-    }, 2000);
+    }, 700);
   } catch (error) {
-    console.error("Registration error:", error);
-    setStatus(registerMsg, "✗ " + (error.message || "Registration failed. Please try again."), true);
+    setStatus(registerMsg, "[ERROR] " + (error.message || "Registration failed. Please try again."), true);
   }
 });
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   setStatus(loginMsg, "Logging in...");
-  
+
   try {
     const result = await api("/api/auth/login", {
       method: "POST",
@@ -100,15 +118,54 @@ loginForm.addEventListener("submit", async (event) => {
     }
 
     setToken(result.token);
-    setStatus(loginMsg, "✓ Login successful! Redirecting...");
-    
-    // Small delay to show success message
+    setStatus(loginMsg, "[OK] Login successful! Redirecting...");
+
     setTimeout(() => {
       window.location.href = "/marketplace";
-    }, 500);
+    }, 400);
   } catch (error) {
-    console.error("Login error:", error);
     setStatus(loginMsg, error.message || "Login failed. Please check your credentials.", true);
+  }
+});
+
+forgotForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus(forgotMsg, "Generating reset token...");
+  try {
+    const result = await api("/api/auth/request-password-reset", {
+      method: "POST",
+      body: JSON.stringify({
+        email: document.getElementById("forgot-email").value
+      })
+    });
+    if (result.resetToken) {
+      document.getElementById("reset-token").value = result.resetToken;
+    }
+    setStatus(forgotMsg, result.message || "If the email exists, reset token generated.");
+  } catch (error) {
+    setStatus(forgotMsg, error.message || "Could not generate reset token.", true);
+  }
+});
+
+resetForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setStatus(resetMsg, "Resetting password...");
+  try {
+    const result = await api("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({
+        token: document.getElementById("reset-token").value,
+        newPassword: document.getElementById("reset-password").value
+      })
+    });
+    setStatus(resetMsg, result.message || "Password reset successful.");
+    resetForm.reset();
+    setTimeout(() => {
+      showTab("login");
+      setStatus(loginMsg, "Password changed. Login with your new password.");
+    }, 800);
+  } catch (error) {
+    setStatus(resetMsg, error.message || "Reset failed.", true);
   }
 });
 

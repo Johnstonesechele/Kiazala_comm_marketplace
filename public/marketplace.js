@@ -104,15 +104,15 @@ safeOn(document, "click", async function(event) {
     return;
   }
 });
-// Only destructure if not already declared
-if (typeof api === "undefined") {
-  const {
-    api,
-    requireAuthRedirect,
-    logoutToAuth,
-    setStatus,
-    initFloatingChat
-  } = window.Kiazala;
+const {
+  api,
+  requireAuthRedirect,
+  logoutToAuth,
+  setStatus,
+  initFloatingChat
+} = window.Kiazala || {};
+if (!api || !requireAuthRedirect || !logoutToAuth || !setStatus || !initFloatingChat) {
+  throw new Error("Kiazala helpers not loaded. Ensure /common.js is loaded before /marketplace.js.");
 }
 requireAuthRedirect();
 
