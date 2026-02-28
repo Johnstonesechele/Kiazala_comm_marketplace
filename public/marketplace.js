@@ -104,14 +104,13 @@ safeOn(document, "click", async function(event) {
     return;
   }
 });
-const {
-  api,
-  requireAuthRedirect,
-  logoutToAuth,
-  setStatus,
-  initFloatingChat
-} = window.Kiazala || {};
-if (!api || !requireAuthRedirect || !logoutToAuth || !setStatus || !initFloatingChat) {
+if (
+  typeof api !== "function" ||
+  typeof requireAuthRedirect !== "function" ||
+  typeof logoutToAuth !== "function" ||
+  typeof setStatus !== "function" ||
+  typeof initFloatingChat !== "function"
+) {
   throw new Error("Kiazala helpers not loaded. Ensure /common.js is loaded before /marketplace.js.");
 }
 requireAuthRedirect();
