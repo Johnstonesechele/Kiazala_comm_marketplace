@@ -651,7 +651,14 @@ async function loadSellerAnalytics() {
 }
 
 async function generateSellerAiInsights() {
-  if (!state.me || state.me.role !== "seller") return;
+  if (!state.me) {
+    setStatus(ui.sellerInsightMsg, "Please wait for your account to load.", true);
+    return;
+  }
+  if (state.me.role !== "seller") {
+    setStatus(ui.sellerInsightMsg, "Only sellers can generate sales insights.", true);
+    return;
+  }
   const language = ui.sellerInsightLanguage ? ui.sellerInsightLanguage.value : "en";
   setStatus(ui.sellerInsightMsg, "Generating AI insights...");
   const result = await api("/api/ai/seller-insights", {
@@ -1228,6 +1235,16 @@ safeOn(ui.settingsForm, "submit", async function(event) {
 });
 
 safeOn(ui.cardAiClose, "click", function() { ui.cardAiModal.classList.add("hidden"); });
+safeOn(ui.sellerInsightBtn, "click", async function() {
+  if (ui.sellerInsightBtn) ui.sellerInsightBtn.disabled = true;
+  try {
+    await generateSellerAiInsights();
+  } catch (err) {
+    setStatus(ui.sellerInsightMsg, err.message, true);
+  } finally {
+    if (ui.sellerInsightBtn) ui.sellerInsightBtn.disabled = false;
+  }
+});
 safeOn(ui.cardAiLangEn, "click", function() {
   state.cardAiLanguage = "en";
   syncCardLanguageUi();
