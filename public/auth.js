@@ -1,4 +1,7 @@
-const { api, setToken, setStatus, initFloatingChat } = window.Kiazala || {};
+const api = window.Kiazala && window.Kiazala.api;
+const setToken = window.Kiazala && window.Kiazala.setToken;
+const setStatus = window.Kiazala && window.Kiazala.setStatus;
+const initFloatingChat = window.Kiazala && window.Kiazala.initFloatingChat;
 if (!api || !setToken || !setStatus || !initFloatingChat) {
   throw new Error("Kiazala helpers not loaded. Load /common.js before /auth.js.");
 }
